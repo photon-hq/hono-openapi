@@ -19,6 +19,7 @@ import type {
 import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
 import type { JSONParsed } from "hono/utils/types";
+import type { InferInput } from "hono/validator";
 import type { JSONSchema7 } from "json-schema";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
@@ -206,14 +207,14 @@ export function validator<
   I extends Input = {
     in: HasUndefined<In> extends true
       ? {
-          [K in Target]?: In extends ValidationTargets[K]
+          [K in Target]?: [In] extends [ValidationTargets[K]]
             ? In
-            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+            : InferInput<In, K>;
         }
       : {
-          [K in Target]: In extends ValidationTargets[K]
+          [K in Target]: [In] extends [ValidationTargets[K]]
             ? In
-            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+            : InferInput<In, K>;
         };
     out: { [K in Target]: Out };
   },
