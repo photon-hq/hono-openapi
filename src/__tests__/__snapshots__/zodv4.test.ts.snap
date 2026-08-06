@@ -51,6 +51,34 @@ exports[`zod v4 > basic 1`] = `
             },
             "description": "Success",
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
         "summary": "Test route",
         "tags": [
@@ -95,7 +123,36 @@ exports[`zod v4 > with global validator 1`] = `
             },
           },
         ],
-        "responses": {},
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
+        },
         "summary": "Test route",
         "tags": [
           "test",
@@ -163,6 +220,34 @@ exports[`zod v4 > with metadata 1`] = `
               },
             },
             "description": "Success",
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
           },
         },
         "summary": "Test route",

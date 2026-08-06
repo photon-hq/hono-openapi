@@ -361,3 +361,275 @@ describe("basic", () => {
     expect(specs).toMatchSnapshot();
   });
 });
+
+describe("default validation error response", () => {
+  it("should include a 400 response when validator is used", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const postSpec = specs.paths["/"]?.post;
+    expect(postSpec?.responses?.["400"]).toBeDefined();
+    expect(postSpec?.responses?.["400"]).toMatchObject({
+      description: "Validation Error",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", enum: [false] },
+              error: { type: "array", items: {} },
+              data: {},
+            },
+            required: ["success", "error", "data"],
+          },
+        },
+      },
+    });
+  });
+
+  it("should not include 400 when defaultValidationErrorResponse is false", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app, {
+      defaultValidationErrorResponse: false,
+    });
+
+    const postSpec = specs.paths["/"]?.post;
+    expect(postSpec?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should allow a custom 400 response via defaultValidationErrorResponse", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const customResponse = {
+      description: "Custom Validation Error",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object" as const,
+            properties: {
+              message: { type: "string" as const },
+            },
+          },
+        },
+      },
+    };
+
+    const specs = await generateSpecs(app, {
+      defaultValidationErrorResponse: customResponse,
+    });
+
+    const postSpec = specs.paths["/"]?.post;
+    expect(postSpec?.responses?.["400"]).toEqual(customResponse);
+  });
+
+  it("should not override user-defined 400 response in describeRoute", async () => {
+    const app = new Hono().post(
+      "/",
+      describeRoute({
+        responses: {
+          200: { description: "OK" },
+          400: { description: "My custom 400" },
+        },
+      }),
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const postSpec = specs.paths["/"]?.post;
+    // The user-defined 400 should take precedence
+    expect(postSpec?.responses?.["400"]).toMatchObject({
+      description: "My custom 400",
+    });
+  });
+
+  it("should not include 400 for routes without validators", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        responses: {
+          200: { description: "OK" },
+        },
+      }),
+      async (c) => {
+        return c.json({ ok: true });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const getSpec = specs.paths["/"]?.get;
+    expect(getSpec?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should not include 400 for routes with only path params and no validator", async () => {
+    const app = new Hono().get(
+      "/users/:id",
+      describeRoute({
+        responses: {
+          200: { description: "OK" },
+        },
+      }),
+      async (c) => {
+        return c.json({ id: c.req.param("id") });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const getSpec = specs.paths["/users/{id}"]?.get;
+    expect(getSpec).toBeDefined();
+    // Auto-generated path params should NOT trigger 400
+    expect(getSpec?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should not include 400 for manually documented parameters without a validator", async () => {
+    const app = new Hono().get(
+      "/search",
+      describeRoute({
+        parameters: [{ in: "query", name: "q", schema: { type: "string" } }],
+        responses: { 200: { description: "OK" } },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    // Documenting a query parameter is not the same as validating it.
+    expect(specs.paths["/search"]?.get?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should not include 400 for a manually documented requestBody without a validator", async () => {
+    const app = new Hono().post(
+      "/upload",
+      describeRoute({
+        requestBody: {
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+        responses: { 200: { description: "OK" } },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/upload"]?.post?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should include 400 for a param validator", async () => {
+    const app = new Hono().get(
+      "/users/:id",
+      validator("param", z.object({ id: z.string() })),
+      async (c) => c.json({ id: c.req.param("id") }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/users/{id}"]?.get?.responses?.["400"]).toBeDefined();
+  });
+
+  it("should not leak the internal validation marker into the emitted spec", async () => {
+    const app = new Hono().post(
+      "/",
+      describeRoute({ responses: { 200: { description: "OK" } } }),
+      validator("json", z.object({ message: z.string() })),
+      async (c) => c.json({ message: "Hello, world!" }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const op = specs.paths["/"]?.post;
+    expect(op?.responses?.["400"]).toBeDefined();
+    // The marker must be stripped before emitting the spec.
+    expect(JSON.stringify(op)).not.toContain("HonoOpenAPIValidator");
+  });
+
+  it("should inject a single 400 when multiple validators are on one route", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      validator("query", z.object({ b: z.string() })),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const responses = specs.paths["/"]?.post?.responses ?? {};
+    expect(responses["400"]).toBeDefined();
+    expect(Object.keys(responses).filter((k) => k === "400")).toHaveLength(1);
+  });
+
+  it("should give each validator route its own 400 object (no shared reference)", async () => {
+    const app = new Hono()
+      .post("/a", validator("json", z.object({ a: z.string() })), (c) =>
+        c.json({ ok: true }),
+      )
+      .post("/b", validator("json", z.object({ b: z.string() })), (c) =>
+        c.json({ ok: true }),
+      );
+
+    const specs = await generateSpecs(app);
+
+    const a = specs.paths["/a"]?.post?.responses?.["400"];
+    const b = specs.paths["/b"]?.post?.responses?.["400"];
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    // Distinct object identities — mutating one must not affect the other.
+    expect(a).not.toBe(b);
+  });
+
+  it("should accept a $ref object as the custom validation error response", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      (c) => c.json({ ok: true }),
+    );
+
+    const ref = { $ref: "#/components/responses/ValidationError" };
+    const specs = await generateSpecs(app, {
+      // @ts-expect-error a ReferenceObject is a valid ResponseObject slot
+      defaultValidationErrorResponse: ref,
+    });
+
+    expect(specs.paths["/"]?.post?.responses?.["400"]).toEqual(ref);
+  });
+
+  it("should mark data as required in the default validation error schema", async () => {
+    // @hono/standard-validator always returns { success, error, data } on a
+    // validation error, so all three are required.
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const schema = (specs.paths["/"]?.post?.responses?.["400"] as any)
+      ?.content?.["application/json"]?.schema;
+    expect(schema?.required).toEqual(["success", "error", "data"]);
+  });
+});

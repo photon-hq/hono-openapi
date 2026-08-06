@@ -23,6 +23,7 @@ import {
   registerSchemaPath,
   removeExcludedPaths,
   uniqueSymbol,
+  VALIDATION_MARKER,
 } from "./utils";
 
 const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
@@ -31,6 +32,31 @@ const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
   exclude: [],
   excludeMethods: ["OPTIONS"],
   excludeTags: [],
+  defaultValidationErrorResponse: true,
+};
+
+/**
+ * Default 400 response matching `@hono/standard-validator`'s error output:
+ * `{ success: false, error: <issues>, data: <input> }`
+ */
+const DEFAULT_VALIDATION_ERROR: OpenAPIV3_1.ResponseObject = {
+  description: "Validation Error",
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: {
+          success: { type: "boolean", enum: [false] },
+          error: {
+            type: "array",
+            items: {},
+          },
+          data: {},
+        },
+        required: ["success", "error", "data"],
+      },
+    },
+  },
 };
 
 /**
@@ -80,6 +106,7 @@ export async function generateSpecs<
       ...DEFAULT_OPTIONS,
       ...options,
     },
+    validationErrorResponse: DEFAULT_VALIDATION_ERROR,
   };
 
   const _documentation = ctx.options.documentation ?? {};
@@ -243,8 +270,13 @@ async function getSpec(
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
-  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
-    { ...defaultOptions };
+  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> &
+    Record<string, unknown> = {
+    ...defaultOptions,
+    // Mark this operation as validator-derived so a default 400 validation
+    // error response can be auto-injected later (see removeExcludedPaths).
+    [VALIDATION_MARKER]: true,
+  };
 
   if (
     middlewareHandler.target === "form" ||

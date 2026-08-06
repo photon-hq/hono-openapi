@@ -7,6 +7,15 @@ import type { RegisterSchemaPathOptions, SpecContext } from "./types";
  */
 export const uniqueSymbol = Symbol("openapi");
 
+/**
+ * Internal marker key set on an operation's spec when it is produced by a
+ * `validator()` middleware. It is used to decide whether to auto-inject the
+ * default 400 validation error response, and is stripped from the operation
+ * before the spec is emitted. Must be an enumerable string key so it survives
+ * the `Object.entries`-based merge in `mergeSpecs`.
+ */
+export const VALIDATION_MARKER = "__HonoOpenAPIValidator__";
+
 export const ALLOWED_METHODS = [
   "GET",
   "PUT",
@@ -252,6 +261,13 @@ export function removeExcludedPaths(
 
       if (schema == null) continue;
 
+      // A `validator()` middleware marks its operation with VALIDATION_MARKER.
+      // Only routes with an actual validator get the auto-injected 400 — a
+      // manually documented `requestBody`/`parameters` in `describeRoute` (or
+      // auto-generated path params) must NOT trigger it.
+      const hasValidation = schema[VALIDATION_MARKER] === true;
+      delete schema[VALIDATION_MARKER];
+
       if (key.includes("{")) {
         // Clone the parameters array to avoid mutating shared references
         schema.parameters = schema.parameters ? [...schema.parameters] : [];
@@ -306,6 +322,26 @@ export function removeExcludedPaths(
         schema.responses = {
           200: {},
         };
+      }
+
+      // Auto-inject a 400 validation error response for routes that use validators
+      if (
+        hasValidation &&
+        ctx.options.defaultValidationErrorResponse !== false &&
+        !schema.responses["400"]
+      ) {
+        const errorResponse = ctx.options.defaultValidationErrorResponse;
+
+        // Clone so each route owns its own response object — the same
+        // default/custom object would otherwise be shared (by reference)
+        // across every validator route (and the module-level default).
+        if (typeof errorResponse === "object") {
+          schema.responses["400"] = structuredClone(errorResponse);
+        } else if (ctx.validationErrorResponse) {
+          schema.responses["400"] = structuredClone(
+            ctx.validationErrorResponse,
+          );
+        }
       }
     }
 

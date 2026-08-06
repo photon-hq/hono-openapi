@@ -51,6 +51,34 @@ exports[`typebox > basic 1`] = `
             },
             "description": "Success",
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
         "summary": "Test route",
         "tags": [
@@ -122,6 +150,34 @@ exports[`typebox > with JSON Schema 1`] = `
             },
             "description": "Success",
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
         "summary": "Test route",
         "tags": [
@@ -190,6 +246,34 @@ exports[`typebox > with metadata 1`] = `
               },
             },
             "description": "Success",
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "data",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
           },
         },
         "summary": "Test route",
