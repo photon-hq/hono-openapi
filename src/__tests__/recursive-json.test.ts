@@ -15,6 +15,22 @@ function localReferences(value: unknown): string[] {
   });
 }
 
+it("preserves responses with explicitly undefined content", async () => {
+  const app = new Hono().get(
+    "/empty",
+    describeRoute({
+      responses: { 204: { description: "No content", content: undefined } },
+    }),
+    (c) => c.body(null, 204),
+  );
+  const document = await generateSpecs(app);
+
+  expect(document.paths["/empty"]?.get?.responses?.[204]).toEqual({
+    description: "No content",
+    content: undefined,
+  });
+});
+
 it.each(["route", "component"] as const)(
   "preserves recursive components when a %s response is reused",
   async (location) => {
