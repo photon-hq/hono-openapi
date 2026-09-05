@@ -2,7 +2,7 @@
 
 `@photon-hq/hono-openapi` is published to GitHub Packages.
 
-Version `1.3.1-photon.1` uses upstream commit
+Version `1.3.1-photon.2` uses upstream commit
 `ce39f12976028681f752c98cc0e7108db5cc96c0` and pins
 `@photon-hq/standard-openapi@0.2.9-photon.1` as a runtime dependency. That converter
 includes the upstream fix for recursive definitions that otherwise produce

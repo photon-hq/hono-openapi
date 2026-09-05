@@ -387,7 +387,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
   for (const key of Object.keys(responses)) {
     const response = responses[key];
 
-    if (!response || !("content" in response)) continue;
+    if (!response || !("content" in response) || !response.content) continue;
 
     const content = { ...response.content };
     resolvedResponses[key] = { ...response, content };
