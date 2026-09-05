@@ -1,4 +1,4 @@
-import type { ToOpenAPISchemaContext } from "@standard-community/standard-openapi";
+import type { ToOpenAPISchemaContext } from "@photon-hq/standard-openapi";
 import type { Context } from "hono";
 import type { RouterRoute, ValidationTargets } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";

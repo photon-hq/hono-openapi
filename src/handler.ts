@@ -130,16 +130,17 @@ export async function generateSpecs<
   }
 
   // Resolve any resolver() objects inside documentation.components.responses
-  const { components: resolvedDocComponents } = _documentation.components
-    ?.responses
+  const resolvedDocResponses = _documentation.components?.responses
     ? await resolveResponseSchemas(_documentation.components.responses)
-    : { components: {} };
+    : undefined;
 
-  // After resolveResponseSchemas, resolver objects in responses have been
-  // resolved in-place, so the cast below is safe.
+  // Use resolved copies so callers can reuse their documentation and resolvers.
   const components = mergeComponentsObjects(
-    _documentation.components as OpenAPIV3_1.ComponentsObject,
-    resolvedDocComponents,
+    {
+      ..._documentation.components,
+      ...(resolvedDocResponses && { responses: resolvedDocResponses.responses }),
+    } as OpenAPIV3_1.ComponentsObject,
+    resolvedDocResponses?.components,
     ctx.components,
   );
 
@@ -263,6 +264,7 @@ async function getSpec(
     let components: OpenAPIV3_1.ComponentsObject = {};
     if (tmp.responses) {
       const resolved = await resolveResponseSchemas(tmp.responses);
+      tmp.responses = resolved.responses;
       components = resolved.components;
     }
 
@@ -379,6 +381,7 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
  * cleaned responses and any components produced during resolution.
  */
 async function resolveResponseSchemas(responses: ResponsesWithResolver) {
+  const resolvedResponses = { ...responses };
   let components: OpenAPIV3_1.ComponentsObject = {};
 
   for (const key of Object.keys(responses)) {
@@ -386,15 +389,18 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
 
     if (!response || !("content" in response)) continue;
 
-    for (const contentKey of Object.keys(response.content ?? {})) {
-      const raw = response.content?.[contentKey];
+    const content = { ...response.content };
+    resolvedResponses[key] = { ...response, content };
+
+    for (const contentKey of Object.keys(content)) {
+      const raw = content[contentKey];
 
       if (!raw) continue;
 
       if (raw.schema && "toOpenAPISchema" in raw.schema) {
         const result = await raw.schema.toOpenAPISchema();
         liftSchemaDefs(result);
-        raw.schema = result.schema;
+        content[contentKey] = { ...raw, schema: result.schema };
         if (result.components) {
           components = mergeComponentsObjects(components, result.components);
         }
@@ -402,7 +408,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
     }
   }
 
-  return { responses, components };
+  return { responses: resolvedResponses, components };
 }
 
 /**

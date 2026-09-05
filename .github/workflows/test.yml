@@ -1,24 +1,29 @@
-name: CI Tests
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22.x
-          package-manager-cache: false
-
-      - name: Install PNPM
-        uses: pnpm/action-setup@v4
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Run tests
-        run: pnpm test
+          node-version: 24
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: '@photon-hq'
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm test --run
+      - run: pnpm build
+      - run: pnpm pack
