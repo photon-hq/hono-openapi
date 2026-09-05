@@ -6,7 +6,7 @@ import {
 import {
   loadVendor as loadVendorOpenAPI,
   toOpenAPISchema,
-} from "@standard-community/standard-openapi";
+} from "@photon-hq/standard-openapi";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   Context,
@@ -105,7 +105,7 @@ export function resolver<Schema extends StandardSchemaV1>(
 
 /**
  * Build the `options` override for an ArkType schema's `toOpenAPISchema`
- * context. The default handler in `@standard-community/standard-openapi`
+ * context. The default handler in `@photon-hq/standard-openapi`
  * passes `context.options` to ArkType's `toJsonSchema()`, so the `fallback`
  * must live inside that nested `options` object.
  *
