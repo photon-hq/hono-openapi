@@ -160,15 +160,57 @@ it("keeps strict requests strict, typed catchalls typed and passthrough response
 
 it("retains every named query property and input requiredness", async () => {
   const query = z
-    .object({ term: z.string(), page: z.string().default("1") })
+    .object({
+      term: z.string().describe("Search term"),
+      page: z.string().default("1"),
+    })
     .meta({ ref: "Search" });
   const app = new Hono().get("/", validator("query", query), (c) =>
     c.json(c.req.valid("query")),
   );
   const document = await generateSpecs(app);
   expect(document.paths?.["/"]?.get?.parameters).toEqual([
-    { in: "query", name: "term", schema: { type: "string" }, required: true },
+    {
+      in: "query",
+      name: "term",
+      schema: { type: "string" },
+      required: true,
+      description: "Search term",
+    },
     { in: "query", name: "page", schema: { type: "string", default: "1" } },
+  ]);
+  expect(document.components?.schemas?.input__Search).toMatchObject({
+    properties: { term: { type: "string", description: "Search term" } },
+  });
+  expect(await generateSpecs(app)).toEqual(document);
+});
+
+it("requires named path parameters even when their input schema is optional or defaulted", async () => {
+  const params = z
+    .object({
+      id: z.string().default("fallback"),
+      revision: z.string().optional(),
+    })
+    .meta({ ref: "PathParams" });
+  const app = new Hono().get(
+    "/items/:id/:revision",
+    validator("param", params),
+    (c) => c.json(c.req.valid("param")),
+  );
+  const document = await generateSpecs(app);
+  expect(document.paths?.["/items/{id}/{revision}"]?.get?.parameters).toEqual([
+    {
+      in: "path",
+      name: "id",
+      schema: { type: "string", default: "fallback" },
+      required: true,
+    },
+    {
+      in: "path",
+      name: "revision",
+      schema: { type: "string" },
+      required: true,
+    },
   ]);
 });
 
@@ -194,4 +236,79 @@ it("rejects conflicting response component names instead of overwriting a route'
   await expect(generateSpecs(app)).rejects.toThrow(
     'Conflicting schema component "output__Shared"',
   );
+});
+
+it("accepts equivalent documented and generated components with reordered object keys", async () => {
+  const shared = z
+    .object({ name: z.string().describe("Display name"), active: z.boolean() })
+    .meta({ ref: "Documented" });
+  const app = new Hono().get(
+    "/",
+    describeRoute({
+      responses: {
+        200: {
+          description: "Documented",
+          content: { "application/json": { schema: resolver(shared) } },
+        },
+      },
+    }),
+    (c) => c.json({ name: "Ada", active: true }),
+  );
+  const documentation = {
+    components: {
+      schemas: {
+        output__Documented: {
+          description: undefined,
+          additionalProperties: false,
+          required: ["name", "active"],
+          properties: {
+            active: { type: "boolean" },
+            name: { description: "Display name", type: "string" },
+          },
+          type: "object",
+        },
+      },
+    },
+  } satisfies Partial<OpenAPIV3_1.Document>;
+  const document = await generateSpecs(app, { documentation });
+  expect(document.components?.schemas?.output__Documented).toEqual(
+    documentation.components.schemas.output__Documented,
+  );
+  expect(await generateSpecs(app, { documentation })).toEqual(document);
+});
+
+it.each([
+  { label: "array order", example: [2, 1] },
+  { label: "array length", example: [1, 2, 3] },
+  { label: "primitive value", example: [1, 3] },
+  { label: "null value", example: null },
+])("rejects component differences in $label", async ({ example }) => {
+  const shared = z.array(z.number()).meta({ ref: "Example", example: [1, 2] });
+  const app = new Hono().get(
+    "/",
+    describeRoute({
+      responses: {
+        200: {
+          description: "Example",
+          content: { "application/json": { schema: resolver(shared) } },
+        },
+      },
+    }),
+    (c) => c.json([1, 2]),
+  );
+  await expect(
+    generateSpecs(app, {
+      documentation: {
+        components: {
+          schemas: {
+            output__Example: {
+              type: "array",
+              items: { type: "number" },
+              example,
+            },
+          },
+        },
+      },
+    }),
+  ).rejects.toThrow('Conflicting schema component "output__Example"');
 });

@@ -350,13 +350,14 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
 
     const isRequired = schema.required?.includes(key);
 
-    if (isRequired) {
+    if (def.in === "path" || isRequired) {
       def.required = true;
     }
 
     if (def.schema && "description" in def.schema && def.schema.description) {
       def.description = def.schema.description;
-      def.schema.description = undefined;
+      def.schema = { ...def.schema };
+      delete def.schema.description;
     }
 
     parameters.push(def);
@@ -430,6 +431,21 @@ function liftSchemaDefs(result: {
   delete (result.schema as { $defs?: unknown }).$defs;
 }
 
+// Keep JSON serialization semantics while ignoring object insertion order.
+function serializeSchema(schema: unknown) {
+  return JSON.stringify(schema, (_key, value: unknown) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      return value;
+    }
+    const object = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(object)
+        .sort()
+        .map((key) => [key, object[key]]),
+    );
+  });
+}
+
 function mergeComponentsObjects(
   ...components: (OpenAPIV3_1.ComponentsObject | undefined)[]
 ) {
@@ -444,7 +460,7 @@ function mergeComponentsObjects(
         for (const [name, schema] of Object.entries(component.schemas ?? {})) {
           if (
             prev.schemas?.[name] !== undefined &&
-            JSON.stringify(prev.schemas[name]) !== JSON.stringify(schema)
+            serializeSchema(prev.schemas[name]) !== serializeSchema(schema)
           ) {
             throw new Error(
               `hono-openapi: Conflicting schema component "${name}".`,
