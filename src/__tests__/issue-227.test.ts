@@ -54,21 +54,26 @@ describe("issue-227", () => {
     expect(responseSchema.$defs).toBeUndefined();
     expect(responseSchema).toEqual({
       type: "array",
-      items: { $ref: "#/components/schemas/Item" },
+      items: { $ref: "#/components/schemas/output__Item" },
     });
 
     // The extracted schemas must live under components.schemas
     const schemas = specs.components?.schemas ?? {};
     expect(Object.keys(schemas)).toEqual(
-      expect.arrayContaining(["Item", "Foo", "Bar", "DateTimeUtc"]),
+      expect.arrayContaining([
+        "output__Item",
+        "output__Foo",
+        "output__Bar",
+        "output__DateTimeUtc",
+      ]),
     );
 
     // The lifted definitions must be the real converted schemas, not $ref stubs
-    expect(schemas.Item).toMatchObject({ type: "object" });
-    expect((schemas.Item as AnyObj).properties.foo).toEqual({
-      $ref: "#/components/schemas/Foo",
+    expect(schemas.output__Item).toMatchObject({ type: "object" });
+    expect((schemas.output__Item as AnyObj).properties.foo).toEqual({
+      $ref: "#/components/schemas/output__Foo",
     });
-    expect(schemas.Bar).toMatchObject({
+    expect(schemas.output__Bar).toMatchObject({
       type: "object",
       properties: { baz: { type: "number" } },
     });
@@ -123,13 +128,13 @@ describe("issue-227", () => {
     const schemas = specs.components?.schemas ?? {};
 
     // Real object definitions, not `{ $ref: ... }` stubs
-    expect(schemas.Item).toMatchObject({ type: "object" });
-    expect(schemas.Bar).toMatchObject({
+    expect(schemas.output__Item).toMatchObject({ type: "object" });
+    expect(schemas.output__Bar).toMatchObject({
       type: "object",
       properties: { baz: { type: "number" } },
     });
-    expect((schemas.Item as AnyObj).$ref).toBeUndefined();
-    expect((schemas.Bar as AnyObj).$ref).toBeUndefined();
+    expect((schemas.output__Item as AnyObj).$ref).toBeUndefined();
+    expect((schemas.output__Bar as AnyObj).$ref).toBeUndefined();
 
     const responseSchema = (
       specs.paths?.["/"]?.get?.responses?.["200"] as AnyObj
@@ -164,12 +169,12 @@ describe("issue-227", () => {
     expect(requestSchema.$defs).toBeUndefined();
     expect(requestSchema).toEqual({
       type: "array",
-      items: { $ref: "#/components/schemas/User" },
+      items: { $ref: "#/components/schemas/input__User" },
     });
 
     const schemas = specs.components?.schemas ?? {};
     expect(Object.keys(schemas)).toEqual(
-      expect.arrayContaining(["User", "Address"]),
+      expect.arrayContaining(["input__User", "input__Address"]),
     );
 
     for (const ref of collectRefs(specs)) {
@@ -235,7 +240,7 @@ describe("issue-227", () => {
     ).content["application/json"].schema;
 
     expect(responseSchema.$defs).toBeUndefined();
-    expect(specs.components?.schemas?.User).toBeDefined();
+    expect(specs.components?.schemas?.output__User).toBeDefined();
   });
 });
 

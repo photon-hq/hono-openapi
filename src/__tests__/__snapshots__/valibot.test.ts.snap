@@ -95,7 +95,7 @@ exports[`valibot > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "SuccessResponse": {
+      "output__SuccessResponse": {
         "properties": {
           "message": {
             "type": "string",
@@ -142,7 +142,7 @@ exports[`valibot > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse",
+                  "$ref": "#/components/schemas/output__SuccessResponse",
                 },
               },
             },
@@ -208,10 +208,7 @@ exports[`valibot > with transformation 1`] = `
             "name": "names",
             "required": true,
             "schema": {
-              "items": {
-                "type": "string",
-              },
-              "type": "array",
+              "type": "string",
             },
           },
         ],

@@ -37,6 +37,7 @@ exports[`zod v4 > basic 1`] = `
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": false,
                   "properties": {
                     "message": {
                       "type": "string",
@@ -168,7 +169,8 @@ exports[`zod v4 > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "SuccessResponse": {
+      "output__SuccessResponse": {
+        "additionalProperties": false,
         "properties": {
           "message": {
             "type": "string",
@@ -215,7 +217,7 @@ exports[`zod v4 > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse",
+                  "$ref": "#/components/schemas/output__SuccessResponse",
                 },
               },
             },
@@ -265,7 +267,8 @@ exports[`zod v4 > with response description 1`] = `
 {
   "components": {
     "schemas": {
-      "SuccessResponse": {
+      "output__SuccessResponse": {
+        "additionalProperties": false,
         "properties": {
           "message": {
             "type": "string",
@@ -312,7 +315,7 @@ exports[`zod v4 > with response description 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse",
+                  "$ref": "#/components/schemas/output__SuccessResponse",
                 },
               },
             },
@@ -322,6 +325,7 @@ exports[`zod v4 > with response description 1`] = `
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": false,
                   "properties": {
                     "error": {
                       "type": "string",

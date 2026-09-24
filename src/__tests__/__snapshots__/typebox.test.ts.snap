@@ -194,7 +194,7 @@ exports[`typebox > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "SuccessResponse": {
+      "output__SuccessResponse": {
         "properties": {
           "message": {
             "type": "string",
@@ -241,7 +241,7 @@ exports[`typebox > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse",
+                  "$ref": "#/components/schemas/output__SuccessResponse",
                 },
               },
             },
