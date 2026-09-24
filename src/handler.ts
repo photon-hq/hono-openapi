@@ -138,7 +138,9 @@ export async function generateSpecs<
   const components = mergeComponentsObjects(
     {
       ..._documentation.components,
-      ...(resolvedDocResponses && { responses: resolvedDocResponses.responses }),
+      ...(resolvedDocResponses && {
+        responses: resolvedDocResponses.responses,
+      }),
     } as OpenAPIV3_1.ComponentsObject,
     resolvedDocResponses?.components,
     ctx.components,
@@ -271,7 +273,7 @@ async function getSpec(
     return { schema: tmp, components };
   }
 
-  const result = await middlewareHandler.toOpenAPISchema();
+  const result = await middlewareHandler.toOpenAPISchema({ io: "input" });
   liftSchemaDefs(result);
   const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> &
     Record<string, unknown> = {
@@ -321,22 +323,9 @@ async function getSpec(
       if (pos && result.components?.schemas?.[pos]) {
         const schema = result.components.schemas[pos];
 
-        const newParameters = generateParameters(
-          middlewareHandler.target,
-          schema,
-        )[0];
-
-        if (!result.components.parameters) {
-          result.components.parameters = {};
-        }
-
-        result.components.parameters[pos] = newParameters;
-
-        delete result.components.schemas[pos];
-
-        parameters.push({
-          $ref: `#/components/parameters/${pos}`,
-        });
+        // Keep the schema component: nested recursive references can still
+        // target it. A named object can describe more than one parameter.
+        parameters = generateParameters(middlewareHandler.target, schema);
       }
     } else {
       parameters = generateParameters(middlewareHandler.target, result.schema);
@@ -361,13 +350,14 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
 
     const isRequired = schema.required?.includes(key);
 
-    if (isRequired) {
+    if (def.in === "path" || isRequired) {
       def.required = true;
     }
 
     if (def.schema && "description" in def.schema && def.schema.description) {
       def.description = def.schema.description;
-      def.schema.description = undefined;
+      def.schema = { ...def.schema };
+      delete def.schema.description;
     }
 
     parameters.push(def);
@@ -398,7 +388,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
       if (!raw) continue;
 
       if (raw.schema && "toOpenAPISchema" in raw.schema) {
-        const result = await raw.schema.toOpenAPISchema();
+        const result = await raw.schema.toOpenAPISchema({ io: "output" });
         liftSchemaDefs(result);
         content[contentKey] = { ...raw, schema: result.schema };
         if (result.components) {
@@ -441,6 +431,21 @@ function liftSchemaDefs(result: {
   delete (result.schema as { $defs?: unknown }).$defs;
 }
 
+// Keep JSON serialization semantics while ignoring object insertion order.
+function serializeSchema(schema: unknown) {
+  return JSON.stringify(schema, (_key, value: unknown) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      return value;
+    }
+    const object = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(object)
+        .sort()
+        .map((key) => [key, object[key]]),
+    );
+  });
+}
+
 function mergeComponentsObjects(
   ...components: (OpenAPIV3_1.ComponentsObject | undefined)[]
 ) {
@@ -452,6 +457,16 @@ function mergeComponentsObjects(
         (prev.schemas && Object.keys(prev.schemas).length > 0) ||
         (component.schemas && Object.keys(component.schemas).length > 0)
       ) {
+        for (const [name, schema] of Object.entries(component.schemas ?? {})) {
+          if (
+            prev.schemas?.[name] !== undefined &&
+            serializeSchema(prev.schemas[name]) !== serializeSchema(schema)
+          ) {
+            throw new Error(
+              `hono-openapi: Conflicting schema component "${name}".`,
+            );
+          }
+        }
         prev.schemas = {
           ...prev.schemas,
           ...component.schemas,

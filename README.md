@@ -13,6 +13,22 @@ For documentation visit [honohub.dev](https://honohub.dev).
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
 
+## Photon fork
+
+`@photon-hq/hono-openapi@1.3.1-photon.3` uses the published
+`@photon-hq/standard-openapi@0.2.9-photon.2`. Requests are documented in input
+mode; route and reusable responses are documented in output mode. Named schema
+components are separated as `input__Name` and `output__Name`.
+
+This changes generated OpenAPI, including response requiredness and object
+policy. Review source response schemas, regenerate clients and snapshots, and
+update hard-coded component references when upgrading. Request validation and
+handler execution are unchanged. The converter retains the documented Zod 3
+stripping-object output limitation.
+
+See [Photon compatibility and rollout notes](https://github.com/photon-hq/hono-openapi/blob/main/PHOTON.md).
+The installation links above refer to the upstream package.
+
 ## Contributing
 
 Visit our [contributing docs](https://github.com/rhinobase/hono-openapi/blob/main/CONTRIBUTING.md).

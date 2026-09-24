@@ -96,14 +96,18 @@ exports[`effect > basic 1`] = `
 exports[`effect > with reference in parameter 1`] = `
 {
   "components": {
-    "parameters": {
-      "Param": {
-        "in": "path",
-        "name": "message",
-        "required": true,
-        "schema": {
-          "type": "string",
+    "schemas": {
+      "input__Param": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "type": "string",
+          },
         },
+        "required": [
+          "message",
+        ],
+        "type": "object",
       },
     },
   },
@@ -120,7 +124,12 @@ exports[`effect > with reference in parameter 1`] = `
         "operationId": "getIndex",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Param",
+            "in": "path",
+            "name": "message",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
           },
         ],
         "responses": {

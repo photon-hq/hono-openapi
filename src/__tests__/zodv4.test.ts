@@ -215,10 +215,10 @@ describe("zod v4", () => {
 
     // Should be a $ref since errorSchema has .meta({ ref: "Error" })
     expect(schema).toHaveProperty("$ref");
-    expect(schema.$ref).toBe("#/components/schemas/Error");
+    expect(schema.$ref).toBe("#/components/schemas/output__Error");
 
     // The Error schema should be in components.schemas
-    expect(specs.components?.schemas?.Error).toBeDefined();
+    expect(specs.components?.schemas?.output__Error).toBeDefined();
   });
 
   it("resolver in documentation.components.responses without ref", async () => {

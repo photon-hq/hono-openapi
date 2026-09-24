@@ -94,14 +94,17 @@ exports[`zod v3 > basic 1`] = `
 exports[`zod v3 > describeResponse 1`] = `
 {
   "components": {
-    "parameters": {
-      "Param": {
-        "in": "path",
-        "name": "id",
-        "required": true,
-        "schema": {
-          "type": "number",
+    "schemas": {
+      "input__Param": {
+        "properties": {
+          "id": {
+            "type": "number",
+          },
         },
+        "required": [
+          "id",
+        ],
+        "type": "object",
       },
     },
   },
@@ -118,7 +121,12 @@ exports[`zod v3 > describeResponse 1`] = `
         "operationId": "getById",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Param",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "number",
+            },
           },
           {
             "in": "query",
@@ -206,14 +214,17 @@ exports[`zod v3 > describeResponse 1`] = `
 exports[`zod v3 > operation id for path with dash 1`] = `
 {
   "components": {
-    "parameters": {
-      "Param": {
-        "in": "path",
-        "name": "id",
-        "required": true,
-        "schema": {
-          "type": "number",
+    "schemas": {
+      "input__Param": {
+        "properties": {
+          "id": {
+            "type": "number",
+          },
         },
+        "required": [
+          "id",
+        ],
+        "type": "object",
       },
     },
   },
@@ -230,7 +241,12 @@ exports[`zod v3 > operation id for path with dash 1`] = `
         "operationId": "getSomePath",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Param",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "number",
+            },
           },
           {
             "in": "query",
@@ -319,7 +335,7 @@ exports[`zod v3 > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "SuccessResponse": {
+      "output__SuccessResponse": {
         "properties": {
           "message": {
             "type": "string",
@@ -366,7 +382,7 @@ exports[`zod v3 > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse",
+                  "$ref": "#/components/schemas/output__SuccessResponse",
                 },
               },
             },
@@ -415,14 +431,17 @@ exports[`zod v3 > with metadata 1`] = `
 exports[`zod v3 > with reference in parameter 1`] = `
 {
   "components": {
-    "parameters": {
-      "Param": {
-        "in": "path",
-        "name": "id",
-        "required": true,
-        "schema": {
-          "type": "number",
+    "schemas": {
+      "input__Param": {
+        "properties": {
+          "id": {
+            "type": "number",
+          },
         },
+        "required": [
+          "id",
+        ],
+        "type": "object",
       },
     },
   },
@@ -439,7 +458,12 @@ exports[`zod v3 > with reference in parameter 1`] = `
         "operationId": "getById",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Param",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "number",
+            },
           },
           {
             "in": "query",
