@@ -97,7 +97,7 @@ exports[`effect > with reference in parameter 1`] = `
 {
   "components": {
     "schemas": {
-      "input__Param": {
+      "Param": {
         "additionalProperties": false,
         "properties": {
           "message": {

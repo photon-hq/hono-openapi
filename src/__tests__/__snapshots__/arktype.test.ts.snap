@@ -227,7 +227,7 @@ exports[`arktype > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "output__SuccessResponse": {
+      "SuccessResponse": {
         "properties": {
           "message": {
             "type": "string",
@@ -274,7 +274,7 @@ exports[`arktype > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/output__SuccessResponse",
+                  "$ref": "#/components/schemas/SuccessResponse",
                 },
               },
             },

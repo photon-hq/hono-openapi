@@ -95,7 +95,7 @@ exports[`zod v3 > describeResponse 1`] = `
 {
   "components": {
     "schemas": {
-      "input__Param": {
+      "Param": {
         "properties": {
           "id": {
             "type": "number",
@@ -215,7 +215,7 @@ exports[`zod v3 > operation id for path with dash 1`] = `
 {
   "components": {
     "schemas": {
-      "input__Param": {
+      "Param": {
         "properties": {
           "id": {
             "type": "number",
@@ -335,7 +335,7 @@ exports[`zod v3 > with metadata 1`] = `
 {
   "components": {
     "schemas": {
-      "output__SuccessResponse": {
+      "SuccessResponse": {
         "properties": {
           "message": {
             "type": "string",
@@ -382,7 +382,7 @@ exports[`zod v3 > with metadata 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/output__SuccessResponse",
+                  "$ref": "#/components/schemas/SuccessResponse",
                 },
               },
             },
@@ -432,7 +432,7 @@ exports[`zod v3 > with reference in parameter 1`] = `
 {
   "components": {
     "schemas": {
-      "input__Param": {
+      "Param": {
         "properties": {
           "id": {
             "type": "number",

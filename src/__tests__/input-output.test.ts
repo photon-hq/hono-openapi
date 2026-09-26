@@ -35,31 +35,31 @@ it("documents accepted requests and serialized responses independently", async (
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ name: "Ada" });
   const document = await generateSpecs(app);
-  expect(document.components?.schemas?.input__Person).toMatchObject({
+  expect(document.components?.schemas?.PersonInput).toMatchObject({
     properties: { name: { default: "Ada" } },
   });
-  expect(document.components?.schemas?.input__Person).not.toHaveProperty(
+  expect(document.components?.schemas?.PersonInput).not.toHaveProperty(
     "required",
   );
-  expect(document.components?.schemas?.input__Person).not.toHaveProperty(
+  expect(document.components?.schemas?.PersonInput).not.toHaveProperty(
     "additionalProperties",
     false,
   );
-  expect(document.components?.schemas?.output__Person).toMatchObject({
+  expect(document.components?.schemas?.Person).toMatchObject({
     required: ["name"],
     additionalProperties: false,
   });
   expect(document.paths?.["/people"]?.post?.requestBody).toMatchObject({
     content: {
       "application/json": {
-        schema: { $ref: "#/components/schemas/input__Person" },
+        schema: { $ref: "#/components/schemas/PersonInput" },
       },
     },
   });
   expect(document.paths?.["/people"]?.post?.responses?.[200]).toMatchObject({
     content: {
       "application/json": {
-        schema: { $ref: "#/components/schemas/output__Person" },
+        schema: { $ref: "#/components/schemas/Person" },
       },
     },
   });
@@ -76,12 +76,14 @@ it("passes direction to custom vendors, including reusable responses, regardless
       }) as OpenAPIV3_1.SchemaObject;
     },
   });
-  const shared = z.object({
-    count: z.number().default(1),
-    get next() {
-      return shared.optional();
-    },
-  });
+  const shared = z
+    .object({
+      count: z.number().default(1),
+      get next() {
+        return shared.optional();
+      },
+    })
+    .meta({ ref: "Shared" });
   Object.assign(shared["~standard"], { vendor: "direction-test" });
   const app = new Hono().post(
     "/",
@@ -107,7 +109,13 @@ it("passes direction to custom vendors, including reusable responses, regardless
       },
     },
   });
-  expect(directions).toEqual(["input", "output"]);
+  // The request conversion is compared with an output conversion of the same
+  // schema to decide whether the request component needs its own name.
+  expect(directions).toEqual(["input", "output", "output"]);
+  expect(Object.keys(result.components?.schemas ?? {}).sort()).toEqual([
+    "Shared",
+    "SharedInput",
+  ]);
   const refs =
     JSON.stringify(result).match(/#\/components\/schemas\/[^"]+/g) ?? [];
   expect(refs.length).toBeGreaterThan(0);
@@ -179,7 +187,7 @@ it("retains every named query property and input requiredness", async () => {
     },
     { in: "query", name: "page", schema: { type: "string", default: "1" } },
   ]);
-  expect(document.components?.schemas?.input__Search).toMatchObject({
+  expect(document.components?.schemas?.SearchInput).toMatchObject({
     properties: { term: { type: "string", description: "Search term" } },
   });
   expect(await generateSpecs(app)).toEqual(document);
@@ -234,7 +242,7 @@ it("rejects conflicting response component names instead of overwriting a route'
     );
   }
   await expect(generateSpecs(app)).rejects.toThrow(
-    'Conflicting schema component "output__Shared"',
+    'Conflicting schema component "Shared"',
   );
 });
 
@@ -257,7 +265,7 @@ it("accepts equivalent documented and generated components with reordered object
   const documentation = {
     components: {
       schemas: {
-        output__Documented: {
+        Documented: {
           description: undefined,
           additionalProperties: false,
           required: ["name", "active"],
@@ -271,8 +279,8 @@ it("accepts equivalent documented and generated components with reordered object
     },
   } satisfies Partial<OpenAPIV3_1.Document>;
   const document = await generateSpecs(app, { documentation });
-  expect(document.components?.schemas?.output__Documented).toEqual(
-    documentation.components.schemas.output__Documented,
+  expect(document.components?.schemas?.Documented).toEqual(
+    documentation.components.schemas.Documented,
   );
   expect(await generateSpecs(app, { documentation })).toEqual(document);
 });
@@ -301,7 +309,7 @@ it.each([
       documentation: {
         components: {
           schemas: {
-            output__Example: {
+            Example: {
               type: "array",
               items: { type: "number" },
               example,
@@ -310,5 +318,5 @@ it.each([
         },
       },
     }),
-  ).rejects.toThrow('Conflicting schema component "output__Example"');
+  ).rejects.toThrow('Conflicting schema component "Example"');
 });
