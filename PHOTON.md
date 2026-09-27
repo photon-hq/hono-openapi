@@ -53,12 +53,13 @@ Custom adapters must forward `context.io` to their native converter. There is no
 blanket guarantee that changing a converter fixes arbitrary runtime transforms.
 
 Version `1.3.1-photon.3` pins `@photon-hq/standard-openapi@0.2.9-photon.2`,
-which names components `input__Name` / `output__Name`. The naming above needs
-the next converter release pinned here and the next `-photon.N` version of this
-package. The tests on this branch assert the new names, so they pass only once
-that converter is pinned. Normal tests use the published converter without
-local aliases. Publish this package only after its PR passes CI and is
-merged, then adopt it through explicit dependency updates in hono-basic and
-other consumers. Version `1.3.1-photon.2` remains pinned to the old converter.
+which names components `input__Name` / `output__Name`. Version
+`1.3.1-photon.4` carries the naming above and must pin
+`@photon-hq/standard-openapi@0.2.9-photon.3`, the converter release with those
+rules. Its tests assert the new names, so they pass only once that converter
+is published and pinned. Normal tests use the published converter without
+local aliases. Publish this package only after its PR passes CI and is merged,
+then adopt it through explicit dependency updates in hono-basic and other
+consumers. Version `1.3.1-photon.2` remains pinned to the old converter.
 See [standard-openapi's compatibility notes](https://github.com/photon-hq/standard-openapi/blob/main/PHOTON.md)
 for the unchanged Zod 3 stripping-object output limitation.
