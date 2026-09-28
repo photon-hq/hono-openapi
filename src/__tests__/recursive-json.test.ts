@@ -38,7 +38,9 @@ it.each(["route", "component"] as const)(
       description: "JSON schemas",
       content: {
         "application/json": {
-          schema: resolver(z.record(z.string(), z.json())),
+          schema: resolver(
+            z.record(z.string(), z.json().meta({ ref: "JsonValue" })),
+          ),
         },
       },
     };
@@ -64,6 +66,9 @@ it.each(["route", "component"] as const)(
       const references = localReferences(document);
 
       expect(references.length).toBeGreaterThan(0);
+      expect(Object.keys(document.components?.schemas ?? {})).toEqual([
+        "JsonValue",
+      ]);
       for (const reference of references) {
         const path = reference
           .slice(2)
@@ -79,3 +84,25 @@ it.each(["route", "component"] as const)(
     ).toBeTypeOf("function");
   },
 );
+
+it("rejects an unnamed recursive response schema instead of inventing a name", async () => {
+  const app = new Hono().get(
+    "/schemas",
+    describeRoute({
+      responses: {
+        200: {
+          description: "JSON schemas",
+          content: {
+            "application/json": {
+              schema: resolver(z.record(z.string(), z.json())),
+            },
+          },
+        },
+      },
+    }),
+    (c) => c.json({}),
+  );
+  await expect(generateSpecs(app)).rejects.toThrow(
+    "Cannot name the reused or recursive schema",
+  );
+});

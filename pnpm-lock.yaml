@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@photon-hq/standard-openapi':
-        specifier: 0.2.9-photon.2
-        version: 0.2.9-photon.2(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(effect@3.17.14)(openapi-types@12.1.3)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+        specifier: 0.2.9-photon.3
+        version: 0.2.9-photon.3(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(effect@3.17.14)(openapi-types@12.1.3)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
       '@standard-community/standard-json':
         specifier: ^0.3.5
         version: 0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
@@ -387,8 +387,8 @@ packages:
   '@octokit/types@13.10.0':
     resolution: {integrity: sha512-ifLaO34EbbPj0Xgro4G5lP5asESjwHracYJvVaPIyXMuiuXLlhic3S47cBdTb+jfODkTE5YtGCLt3Ay3+J97sA==}
 
-  '@photon-hq/standard-openapi@0.2.9-photon.2':
-    resolution: {integrity: sha512-9zuLrVKiynM28Nur8us5gJNoHkTnAHOeAi0yGI4FrRHAo0kQ/GNvgxaK201yMgWrT7Cjb20cR0K04tMkPlJs8g==, tarball: https://npm.pkg.github.com/download/@photon-hq/standard-openapi/0.2.9-photon.2/6ab54a7354cb54d7e7be470bf923ac11b7b7c338}
+  '@photon-hq/standard-openapi@0.2.9-photon.3':
+    resolution: {integrity: sha512-doOY/D5/FQnp2aKjjyWImn9/EfVwSXnck70yWHTsik9yz9D7OEKVoHH3DtAPbwA6vziBWkzl3Ht/FVVzSkw2Rg==, tarball: https://npm.pkg.github.com/download/@photon-hq/standard-openapi/0.2.9-photon.3/1ccc4c9e4af8a78d64094185457365f428e9eb4c}
     peerDependencies:
       '@standard-community/standard-json': ^0.3.5
       '@standard-schema/spec': ^1.0.0
@@ -400,21 +400,6 @@ packages:
       valibot: ^1.1.0
       zod: ^3.25.0 || ^4.0.0
       zod-openapi: ^4
-    peerDependenciesMeta:
-      arktype:
-        optional: true
-      effect:
-        optional: true
-      sury:
-        optional: true
-      typebox:
-        optional: true
-      valibot:
-        optional: true
-      zod:
-        optional: true
-      zod-openapi:
-        optional: true
 
   '@rollup/plugin-alias@5.1.1':
     resolution: {integrity: sha512-PR9zDb+rOzkRb2VD+EuKB7UC41vU5DIwZ5qqCpk0KJudcWAyi8rvYOhS7+L5aZCspw1stTViLgN5v6FF1p5cgQ==}
@@ -1427,14 +1412,13 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 24.2.0
 
-  '@photon-hq/standard-openapi@0.2.9-photon.2(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(effect@3.17.14)(openapi-types@12.1.3)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+  '@photon-hq/standard-openapi@0.2.9-photon.3(@standard-community/standard-json@0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(effect@3.17.14)(openapi-types@12.1.3)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
     dependencies:
       '@standard-community/standard-json': 0.3.5(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.14)(quansync@0.2.11)(sury@10.0.4)(typebox@1.0.17)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
       '@standard-schema/spec': 1.0.0
-      openapi-types: 12.1.3
-    optionalDependencies:
       arktype: 2.1.22
       effect: 3.17.14
+      openapi-types: 12.1.3
       sury: 10.0.4
       typebox: 1.0.17
       valibot: 1.1.0(typescript@5.8.3)

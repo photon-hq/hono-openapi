@@ -31,10 +31,14 @@ Custom vendors receive `context.io`; forward it to the schema library without
 changing the source schema's object policy. Response schemas must describe the
 JSON that the handler actually serializes.
 
-The exact converter dependency is the published ENG-2960 release. Generated
-schema components use `input__Name` and `output__Name`; emitted refs, snapshots
-and consumer adoption must be updated together. Named query/parameter objects
-retain all fields, and their schema components remain available for recursive
+Component names follow the converter: a response component keeps its name
+(`Name`); a request component keeps the same name when its request and response
+representations are identical and is `NameInput` when they differ. The
+converter never invents names, so every recursive or reused schema must be
+named with metadata (for example `z.json().meta({ ref: "JsonValue" })`);
+otherwise document generation fails with the schema's location. Emitted refs,
+snapshots and consumer adoption must be updated together. Named query/parameter
+objects retain all fields, and their schema components remain available for recursive
 refs. Different schemas with a colliding component name fail explicitly.
 
 This is a change to the emitted OpenAPI contract, not a change to request
@@ -48,9 +52,14 @@ that policy in their source response schemas rather than widen generated output.
 Custom adapters must forward `context.io` to their native converter. There is no
 blanket guarantee that changing a converter fixes arbitrary runtime transforms.
 
-The selected release is `1.3.1-photon.3`. Normal tests use the published converter
-without local aliases. Publish this package only after its PR passes CI and is
-merged, then adopt it through explicit dependency updates in hono-basic and
-other consumers. Version `1.3.1-photon.2` remains pinned to the old converter.
+Version `1.3.1-photon.3` pins `@photon-hq/standard-openapi@0.2.9-photon.2`,
+which names components `input__Name` / `output__Name`. Version
+`1.3.1-photon.4` carries the naming above and must pin
+`@photon-hq/standard-openapi@0.2.9-photon.3`, the converter release with those
+rules. Its tests assert the new names, so they pass only once that converter
+is published and pinned. Normal tests use the published converter without
+local aliases. Publish this package only after its PR passes CI and is merged,
+then adopt it through explicit dependency updates in hono-basic and other
+consumers. Version `1.3.1-photon.2` remains pinned to the old converter.
 See [standard-openapi's compatibility notes](https://github.com/photon-hq/standard-openapi/blob/main/PHOTON.md)
 for the unchanged Zod 3 stripping-object output limitation.

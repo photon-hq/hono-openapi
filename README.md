@@ -15,10 +15,13 @@ For documentation visit [honohub.dev](https://honohub.dev).
 
 ## Photon fork
 
-`@photon-hq/hono-openapi@1.3.1-photon.3` uses the published
-`@photon-hq/standard-openapi@0.2.9-photon.2`. Requests are documented in input
+`@photon-hq/hono-openapi@1.3.1-photon.4` uses
+`@photon-hq/standard-openapi@0.2.9-photon.3`. Requests are documented in input
 mode; route and reusable responses are documented in output mode. Named schema
-components are separated as `input__Name` and `output__Name`.
+components keep their names without prefixes. A request component is named
+`<Name>Input` only when its request and response representations differ.
+Recursive and reused schemas must be named (for example
+`z.json().meta({ ref: "JsonValue" })`); otherwise document generation fails.
 
 This changes generated OpenAPI, including response requiredness and object
 policy. Review source response schemas, regenerate clients and snapshots, and
