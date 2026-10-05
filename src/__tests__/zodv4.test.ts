@@ -405,36 +405,31 @@ describe("zod v4", () => {
     });
   });
 
-  it("documents standard formats without the pattern Zod copies from the format check", async () => {
+  it("documents formats without Zod's pattern where the format alone describes the value", async () => {
     const handle = /^@[a-z]+$/;
+    const shape = {
+      at: z.iso.datetime(),
+      atWithOffset: z.iso.datetime({ offset: true }),
+      day: z.iso.date(),
+      email: z.email(),
+      handle: z.string().regex(handle),
+      id: z.uuid(),
+      local: z.iso.datetime({ local: true }),
+      nullableAt: z.iso.datetime().nullable(),
+      phone: z.e164(),
+      stampedAt: z.iso.datetime({ precision: 3 }),
+      token: z.base64(),
+      zulu: z.iso.datetime().regex(/Z$/),
+    };
     const app = new Hono().post(
       "/",
-      validator(
-        "json",
-        z.object({
-          email: z.string().email(),
-          handle: z.string().regex(handle),
-          zulu: z.iso.datetime().regex(/Z$/),
-        }),
-      ),
+      validator("json", z.object(shape)),
       describeRoute({
         responses: {
           200: {
             description: "Success",
             content: {
-              "application/json": {
-                schema: resolver(
-                  z.object({
-                    createdAt: z.iso.datetime(),
-                    deletedAt: z.iso.datetime().nullable(),
-                    day: z.iso.date(),
-                    id: z.uuid(),
-                    phone: z.e164(),
-                    stampedAt: z.iso.datetime({ precision: 3 }),
-                    token: z.base64(),
-                  }),
-                ),
-              },
+              "application/json": { schema: resolver(z.object(shape)) },
             },
           },
         },
@@ -443,31 +438,48 @@ describe("zod v4", () => {
     );
 
     const specs = await generateSpecs(app);
-    const output = specs.paths["/"]?.post?.responses?.[200]?.content?.[
-      "application/json"
-    ]?.schema as ObjectSchema;
+    const output = (
+      specs.paths["/"]?.post?.responses?.[200]?.content?.["application/json"]
+        ?.schema as ObjectSchema
+    ).properties;
     const input = (
       specs.paths["/"]?.post?.requestBody as {
         content: Record<string, { schema: ObjectSchema }>;
       }
-    ).content["application/json"].schema;
+    ).content["application/json"].schema.properties;
+    const hasPattern = (schema: unknown) =>
+      JSON.stringify(schema).includes('"pattern"');
 
-    expect(output.properties.createdAt).toEqual({
-      type: "string",
-      format: "date-time",
-    });
-    expect(output.properties.day).toEqual({ type: "string", format: "date" });
-    expect(output.properties.id).not.toHaveProperty("pattern");
-    expect(JSON.stringify(output.properties.deletedAt)).not.toContain(
-      "pattern",
-    );
-    expect(input.properties.email).not.toHaveProperty("pattern");
-    // A service's own pattern, a Zod-only format and a narrower variant keep theirs.
-    expect(input.properties.handle).toHaveProperty("pattern", handle.source);
-    expect(JSON.stringify(input.properties.zulu)).toContain("Z$");
-    expect(output.properties.phone).toHaveProperty("pattern");
-    expect(output.properties.token).toHaveProperty("pattern");
-    expect(output.properties.stampedAt).toHaveProperty("pattern");
+    // Produced values: every value the check allows is a valid instance of
+    // the format, so the format is enough.
+    for (const name of [
+      "at",
+      "atWithOffset",
+      "day",
+      "email",
+      "id",
+      "nullableAt",
+      "stampedAt",
+    ]) {
+      expect(hasPattern(output[name]), name).toBe(false);
+    }
+    expect(output.at).toEqual({ type: "string", format: "date-time" });
+    // Accepted values keep the pattern unless the check accepts everything
+    // the format allows: a plain z.iso.datetime() rejects offsets.
+    for (const name of ["atWithOffset", "day"]) {
+      expect(hasPattern(input[name]), name).toBe(false);
+    }
+    for (const name of ["at", "email", "id", "nullableAt", "stampedAt"]) {
+      expect(hasPattern(input[name]), name).toBe(true);
+    }
+    // Never dropped: a schema's own regex, Zod-only formats, local times.
+    for (const schemas of [input, output]) {
+      expect(schemas.handle).toHaveProperty("pattern", handle.source);
+      expect(JSON.stringify(schemas.zulu)).toContain("Z$");
+      for (const name of ["local", "phone", "token"]) {
+        expect(hasPattern(schemas[name]), name).toBe(true);
+      }
+    }
   });
 
   it("z.date() should work in validator schemas", async () => {

@@ -52,7 +52,7 @@ export function loadVendor(
  */
 const arktypeMorphFallback = (ctx: { base: unknown }) => ctx.base;
 
-/** JSON Schema formats that already say what the value is. */
+/** JSON Schema string formats Zod writes beside a check's own regex. */
 const STANDARD_FORMATS = new Set([
   "date",
   "date-time",
@@ -67,6 +67,7 @@ type ZodFormatCheckDef = {
   check?: string;
   format?: string;
   local?: boolean;
+  offset?: boolean;
   pattern?: RegExp;
   precision?: number | null;
 };
@@ -85,16 +86,11 @@ type ZodV4OverrideContext = {
 };
 
 /**
- * Whether `jsonSchema.pattern` is only the regular expression Zod validates a
- * standard format with. Zod writes it beside `format`, so every
- * `z.iso.datetime()` carries a 300-character pattern next to
- * `format: "date-time"`. A schema with its own `.regex()`, a Zod-only format
- * (base64, e164), a fixed precision or local time keeps its pattern.
+ * The format check whose regex Zod wrote as `pattern` beside a standard
+ * `format`, or undefined when the pattern is anything else (a schema's own
+ * `.regex()`, or a Zod-only format such as base64 or e164).
  */
-const isFormatOwnPattern = ({
-  zodSchema,
-  jsonSchema,
-}: ZodV4OverrideContext) => {
+const formatOwnPattern = ({ zodSchema, jsonSchema }: ZodV4OverrideContext) => {
   const { format, pattern } = jsonSchema;
   if (
     typeof format !== "string" ||
@@ -102,45 +98,69 @@ const isFormatOwnPattern = ({
     !STANDARD_FORMATS.has(format) ||
     zodSchema._zod.bag.patterns?.size !== 1
   ) {
-    return false;
+    return undefined;
   }
   const def = zodSchema._zod.def;
   const checks =
     def.check === "string_format"
       ? [def]
       : (def.checks ?? []).map((check) => check._zod.def);
-  const own = checks.find(
+  return checks.find(
     (check) =>
       check.check === "string_format" &&
       check.format !== "regex" &&
       check.pattern?.source === pattern,
   );
-  return own !== undefined && own.precision == null && !own.local;
 };
 
 /**
- * Default override for Zod v4 schemas, also exported for code that calls
- * `toJSONSchema` itself:
- *
- * - converts `z.date()` to `{ type: "string", format: "date-time" }` since
- *   Date cannot be represented in JSON Schema and Zod v4's `toJSONSchema`
- *   throws by default. Must be used together with `unrepresentable: "any"`
- *   so that `z.date()` produces `{}` instead of throwing; this override then
- *   fills in the type and format during the emit phase.
- * - documents a standard string format (`date-time`, `email`, `uuid`, ...)
- *   with `format` alone, as public contracts such as GitHub's and
- *   Cloudflare's do, by dropping the pattern Zod copies from the format
- *   check. Validation is unchanged.
+ * A value the API produces needs only its format: whatever the check allows
+ * is a valid instance of the format. Local date-times are the exception;
+ * without an offset they are not RFC 3339 date-times.
  */
-export const zodV4Override = (ctx: ZodV4OverrideContext) => {
-  if (ctx.zodSchema._zod.def.type === "date") {
-    ctx.jsonSchema.type = "string";
-    ctx.jsonSchema.format = "date-time";
-  }
-  if (isFormatOwnPattern(ctx)) {
-    delete ctx.jsonSchema.pattern;
-  }
-};
+const outputNeedsOnlyFormat = (check: ZodFormatCheckDef) => !check.local;
+
+/**
+ * A value the API accepts needs only its format when the check accepts every
+ * value the format allows. Otherwise the pattern tells callers what is
+ * rejected, for example a date-time with an offset other than `Z`.
+ */
+const inputNeedsOnlyFormat = (check: ZodFormatCheckDef) =>
+  check.format === "date" ||
+  check.format === "ipv4" ||
+  (check.format === "datetime" &&
+    check.offset === true &&
+    check.precision == null &&
+    !check.local);
+
+const zodV4Override =
+  (needsOnlyFormat: (check: ZodFormatCheckDef) => boolean) =>
+  (ctx: ZodV4OverrideContext) => {
+    // Date cannot be represented in JSON Schema and Zod v4's `toJSONSchema`
+    // throws by default. With `unrepresentable: "any"` it produces `{}`, and
+    // the type and format are filled in here.
+    if (ctx.zodSchema._zod.def.type === "date") {
+      ctx.jsonSchema.type = "string";
+      ctx.jsonSchema.format = "date-time";
+    }
+    // Zod writes the regex it validates a string format with as `pattern`
+    // beside `format`. Drop it where the format alone describes the value.
+    const check = formatOwnPattern(ctx);
+    if (check && needsOnlyFormat(check)) {
+      delete ctx.jsonSchema.pattern;
+    }
+  };
+
+/**
+ * Default Zod v4 overrides by direction, also exported for code that calls
+ * `toJSONSchema` itself. Both document `z.date()` as a date-time string, and
+ * document a standard string format (`date-time`, `email`, ...) without the
+ * pattern Zod copies from the format check where the format alone describes
+ * the value: always for produced values, and for accepted values only when
+ * the check accepts everything the format allows. Validation is unchanged.
+ */
+export const zodV4OutputOverride = zodV4Override(outputNeedsOnlyFormat);
+export const zodV4InputOverride = zodV4Override(inputNeedsOnlyFormat);
 
 /**
  * Generate a resolver for a validation schema
@@ -222,7 +242,8 @@ function injectArktypeFallback(
  *   produces `{}` instead of throwing)
  * - `override` fills in `{ type: "string", format: "date-time" }` during
  *   the emit phase, and drops the pattern Zod copies beside a standard
- *   string format (see `zodV4Override`)
+ *   string format where the format alone describes the value (see
+ *   `zodV4OutputOverride` and `zodV4InputOverride`)
  *
  * Only applies to Zod v4 schemas (detected by the `_zod` property).
  * If the caller already supplied an `override`, it is preserved.
@@ -250,10 +271,13 @@ function injectZodV4Override(
     return undefined;
   }
 
+  const io =
+    custom?.io ?? customNested?.io ?? userDefined?.io ?? userNested?.io;
   return {
     options: {
       unrepresentable: "any",
-      override: zodV4Override,
+      // Unknown direction: document as accepted values, which keeps more.
+      override: io === "output" ? zodV4OutputOverride : zodV4InputOverride,
       ...userNested,
       ...customNested,
     },

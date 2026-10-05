@@ -5,7 +5,8 @@ export {
   loadVendor,
   resolver,
   validator,
-  zodV4Override,
+  zodV4InputOverride,
+  zodV4OutputOverride,
 } from "./middlewares.js";
 export type * from "./types.js";
 export * from "./utils.js";
