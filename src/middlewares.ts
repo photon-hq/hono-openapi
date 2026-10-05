@@ -52,22 +52,93 @@ export function loadVendor(
  */
 const arktypeMorphFallback = (ctx: { base: unknown }) => ctx.base;
 
-/**
- * Default override for Zod v4 schemas — converts `z.date()` to
- * `{ type: "string", format: "date-time" }` since Date cannot be
- * represented in JSON Schema and Zod v4's `toJSONSchema` throws by default.
- *
- * Must be used together with `unrepresentable: "any"` so that `z.date()`
- * doesn't throw during processing (it produces `{}` instead), then this
- * override fills in the correct type and format during the emit phase.
- */
-const zodV4DateOverride = (ctx: {
-  zodSchema: { _zod: { def: { type: string } } };
+/** JSON Schema formats that already say what the value is. */
+const STANDARD_FORMATS = new Set([
+  "date",
+  "date-time",
+  "duration",
+  "email",
+  "ipv4",
+  "ipv6",
+  "uuid",
+]);
+
+type ZodFormatCheckDef = {
+  check?: string;
+  format?: string;
+  local?: boolean;
+  pattern?: RegExp;
+  precision?: number | null;
+};
+
+type ZodV4OverrideContext = {
+  zodSchema: {
+    _zod: {
+      def: ZodFormatCheckDef & {
+        type: string;
+        checks?: { _zod: { def: ZodFormatCheckDef } }[];
+      };
+      bag: { patterns?: Set<RegExp> };
+    };
+  };
   jsonSchema: Record<string, unknown>;
-}) => {
+};
+
+/**
+ * Whether `jsonSchema.pattern` is only the regular expression Zod validates a
+ * standard format with. Zod writes it beside `format`, so every
+ * `z.iso.datetime()` carries a 300-character pattern next to
+ * `format: "date-time"`. A schema with its own `.regex()`, a Zod-only format
+ * (base64, e164), a fixed precision or local time keeps its pattern.
+ */
+const isFormatOwnPattern = ({
+  zodSchema,
+  jsonSchema,
+}: ZodV4OverrideContext) => {
+  const { format, pattern } = jsonSchema;
+  if (
+    typeof format !== "string" ||
+    typeof pattern !== "string" ||
+    !STANDARD_FORMATS.has(format) ||
+    zodSchema._zod.bag.patterns?.size !== 1
+  ) {
+    return false;
+  }
+  const def = zodSchema._zod.def;
+  const checks =
+    def.check === "string_format"
+      ? [def]
+      : (def.checks ?? []).map((check) => check._zod.def);
+  const own = checks.find(
+    (check) =>
+      check.check === "string_format" &&
+      check.format !== "regex" &&
+      check.pattern?.source === pattern,
+  );
+  return own !== undefined && own.precision == null && !own.local;
+};
+
+/**
+ * Default override for Zod v4 schemas, also exported for code that calls
+ * `toJSONSchema` itself:
+ *
+ * - converts `z.date()` to `{ type: "string", format: "date-time" }` since
+ *   Date cannot be represented in JSON Schema and Zod v4's `toJSONSchema`
+ *   throws by default. Must be used together with `unrepresentable: "any"`
+ *   so that `z.date()` produces `{}` instead of throwing; this override then
+ *   fills in the type and format during the emit phase.
+ * - documents a standard string format (`date-time`, `email`, `uuid`, ...)
+ *   with `format` alone, as public contracts such as GitHub's and
+ *   Cloudflare's do, by dropping the pattern Zod copies from the format
+ *   check. Validation is unchanged.
+ */
+export const zodV4Override = (ctx: ZodV4OverrideContext) => {
   if (ctx.zodSchema._zod.def.type === "date") {
     ctx.jsonSchema.type = "string";
     ctx.jsonSchema.format = "date-time";
+  }
+  if (isFormatOwnPattern(ctx)) {
+    delete ctx.jsonSchema.pattern;
   }
 };
 
@@ -97,7 +168,7 @@ export function resolver<Schema extends StandardSchemaV1>(
           ? injectArktypeFallback(userDefinedOptions, customOptions)
           : undefined),
         ...(vendor === "zod"
-          ? injectZodV4DateOverride(schema, userDefinedOptions, customOptions)
+          ? injectZodV4Override(schema, userDefinedOptions, customOptions)
           : undefined),
       }),
   };
@@ -150,12 +221,13 @@ function injectArktypeFallback(
  * - `unrepresentable: "any"` prevents the throw during processing (Date
  *   produces `{}` instead of throwing)
  * - `override` fills in `{ type: "string", format: "date-time" }` during
- *   the emit phase
+ *   the emit phase, and drops the pattern Zod copies beside a standard
+ *   string format (see `zodV4Override`)
  *
  * Only applies to Zod v4 schemas (detected by the `_zod` property).
  * If the caller already supplied an `override`, it is preserved.
  */
-function injectZodV4DateOverride(
+function injectZodV4Override(
   schema: StandardSchemaV1,
   userDefined?: Record<string, unknown>,
   custom?: Record<string, unknown>,
@@ -181,7 +253,7 @@ function injectZodV4DateOverride(
   return {
     options: {
       unrepresentable: "any",
-      override: zodV4DateOverride,
+      override: zodV4Override,
       ...userNested,
       ...customNested,
     },

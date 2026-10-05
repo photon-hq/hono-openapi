@@ -9,6 +9,8 @@ import {
   validator,
 } from "../middlewares.js";
 
+type ObjectSchema = { properties: Record<string, Record<string, unknown>> };
+
 describe("zod v4", () => {
   it("basic", async () => {
     const app = new Hono().get(
@@ -401,6 +403,71 @@ describe("zod v4", () => {
       type: "string",
       format: "date-time",
     });
+  });
+
+  it("documents standard formats without the pattern Zod copies from the format check", async () => {
+    const handle = /^@[a-z]+$/;
+    const app = new Hono().post(
+      "/",
+      validator(
+        "json",
+        z.object({
+          email: z.string().email(),
+          handle: z.string().regex(handle),
+          zulu: z.iso.datetime().regex(/Z$/),
+        }),
+      ),
+      describeRoute({
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    createdAt: z.iso.datetime(),
+                    deletedAt: z.iso.datetime().nullable(),
+                    day: z.iso.date(),
+                    id: z.uuid(),
+                    phone: z.e164(),
+                    stampedAt: z.iso.datetime({ precision: 3 }),
+                    token: z.base64(),
+                  }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => c.json({}),
+    );
+
+    const specs = await generateSpecs(app);
+    const output = specs.paths["/"]?.post?.responses?.[200]?.content?.[
+      "application/json"
+    ]?.schema as ObjectSchema;
+    const input = (
+      specs.paths["/"]?.post?.requestBody as {
+        content: Record<string, { schema: ObjectSchema }>;
+      }
+    ).content["application/json"].schema;
+
+    expect(output.properties.createdAt).toEqual({
+      type: "string",
+      format: "date-time",
+    });
+    expect(output.properties.day).toEqual({ type: "string", format: "date" });
+    expect(output.properties.id).not.toHaveProperty("pattern");
+    expect(JSON.stringify(output.properties.deletedAt)).not.toContain(
+      "pattern",
+    );
+    expect(input.properties.email).not.toHaveProperty("pattern");
+    // A service's own pattern, a Zod-only format and a narrower variant keep theirs.
+    expect(input.properties.handle).toHaveProperty("pattern", handle.source);
+    expect(JSON.stringify(input.properties.zulu)).toContain("Z$");
+    expect(output.properties.phone).toHaveProperty("pattern");
+    expect(output.properties.token).toHaveProperty("pattern");
+    expect(output.properties.stampedAt).toHaveProperty("pattern");
   });
 
   it("z.date() should work in validator schemas", async () => {
