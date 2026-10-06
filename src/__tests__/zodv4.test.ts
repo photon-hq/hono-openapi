@@ -7,6 +7,8 @@ import {
   describeRoute,
   resolver,
   validator,
+  zodV4InputOverride,
+  zodV4OutputOverride,
 } from "../middlewares.js";
 
 type ObjectSchema = { properties: Record<string, Record<string, unknown>> };
@@ -498,6 +500,24 @@ describe("zod v4", () => {
     }).toOpenAPISchema({ components: {}, options: { io: "output" } });
     const schema = converted.schema as ObjectSchema;
     expect(JSON.stringify(schema.properties.at)).toContain('"pattern"');
+  });
+
+  it("exports overrides that z.toJSONSchema accepts directly", () => {
+    // A type error here means the exported overrides cannot be passed to Zod.
+    const input = z.toJSONSchema(
+      z.object({ at: z.iso.datetime(), day: z.iso.date() }),
+      {
+        io: "input",
+        override: zodV4InputOverride,
+      },
+    ) as ObjectSchema;
+    const output = z.toJSONSchema(z.object({ at: z.iso.datetime() }), {
+      io: "output",
+      override: zodV4OutputOverride,
+    }) as ObjectSchema;
+    expect(input.properties.at).toHaveProperty("pattern");
+    expect(input.properties.day).not.toHaveProperty("pattern");
+    expect(output.properties.at).not.toHaveProperty("pattern");
   });
 
   it("z.date() should work in validator schemas", async () => {
