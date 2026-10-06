@@ -420,6 +420,7 @@ describe("zod v4", () => {
       stampedAt: z.iso.datetime({ precision: 3 }),
       token: z.base64(),
       zulu: z.iso.datetime().regex(/Z$/),
+      reusedRegex: z.iso.date().regex(z.regexes.date),
     };
     const app = new Hono().post(
       "/",
@@ -465,13 +466,22 @@ describe("zod v4", () => {
     }
     expect(output.at).toEqual({ type: "string", format: "date-time" });
     // Accepted values keep the pattern unless the check accepts everything
-    // the format allows: a plain z.iso.datetime() rejects offsets.
-    for (const name of ["atWithOffset", "day"]) {
-      expect(hasPattern(input[name]), name).toBe(false);
-    }
-    for (const name of ["at", "email", "id", "nullableAt", "stampedAt"]) {
+    // the format allows. No Zod date-time does: RFC 3339 also allows a
+    // lowercase t and z, and a plain z.iso.datetime() rejects offsets too.
+    expect(hasPattern(input.day)).toBe(false);
+    for (const name of [
+      "at",
+      "atWithOffset",
+      "email",
+      "id",
+      "nullableAt",
+      "stampedAt",
+      "reusedRegex",
+    ]) {
       expect(hasPattern(input[name]), name).toBe(true);
     }
+    // A schema's own .regex() is kept even when it is Zod's own date regex.
+    expect(hasPattern(output.reusedRegex)).toBe(true);
     // Never dropped: a schema's own regex, Zod-only formats, local times.
     for (const schemas of [input, output]) {
       expect(schemas.handle).toHaveProperty("pattern", handle.source);
@@ -480,6 +490,14 @@ describe("zod v4", () => {
         expect(hasPattern(schemas[name]), name).toBe(true);
       }
     }
+  });
+
+  it("documents by the top-level direction when a nested option says otherwise", async () => {
+    const converted = await resolver(z.object({ at: z.iso.datetime() }), {
+      io: "input",
+    }).toOpenAPISchema({ components: {}, options: { io: "output" } });
+    const schema = converted.schema as ObjectSchema;
+    expect(JSON.stringify(schema.properties.at)).toContain('"pattern"');
   });
 
   it("z.date() should work in validator schemas", async () => {

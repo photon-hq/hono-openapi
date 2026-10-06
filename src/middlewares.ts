@@ -67,7 +67,6 @@ type ZodFormatCheckDef = {
   check?: string;
   format?: string;
   local?: boolean;
-  offset?: boolean;
   pattern?: RegExp;
   precision?: number | null;
 };
@@ -105,11 +104,18 @@ const formatOwnPattern = ({ zodSchema, jsonSchema }: ZodV4OverrideContext) => {
     def.check === "string_format"
       ? [def]
       : (def.checks ?? []).map((check) => check._zod.def);
+  // A schema with its own `.regex()` keeps its pattern, even when that regex is
+  // the same object as the format check's (Zod then records it only once).
+  if (
+    checks.some(
+      (check) => check.check === "string_format" && check.format === "regex",
+    )
+  ) {
+    return undefined;
+  }
   return checks.find(
     (check) =>
-      check.check === "string_format" &&
-      check.format !== "regex" &&
-      check.pattern?.source === pattern,
+      check.check === "string_format" && check.pattern?.source === pattern,
   );
 };
 
@@ -123,15 +129,12 @@ const outputNeedsOnlyFormat = (check: ZodFormatCheckDef) => !check.local;
 /**
  * A value the API accepts needs only its format when the check accepts every
  * value the format allows. Otherwise the pattern tells callers what is
- * rejected, for example a date-time with an offset other than `Z`.
+ * rejected. No Zod date-time check qualifies: RFC 3339 also allows a lowercase
+ * `t` and `z`, which Zod rejects, and without `offset: true` it rejects
+ * offsets too.
  */
 const inputNeedsOnlyFormat = (check: ZodFormatCheckDef) =>
-  check.format === "date" ||
-  check.format === "ipv4" ||
-  (check.format === "datetime" &&
-    check.offset === true &&
-    check.precision == null &&
-    !check.local);
+  check.format === "date" || check.format === "ipv4";
 
 const zodV4Override =
   (needsOnlyFormat: (check: ZodFormatCheckDef) => boolean) =>
@@ -271,8 +274,9 @@ function injectZodV4Override(
     return undefined;
   }
 
+  // The converter uses a top-level `io` before one nested in `options`.
   const io =
-    custom?.io ?? customNested?.io ?? userDefined?.io ?? userNested?.io;
+    custom?.io ?? userDefined?.io ?? customNested?.io ?? userNested?.io;
   return {
     options: {
       unrepresentable: "any",
