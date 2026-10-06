@@ -1,4 +1,5 @@
 export { generateSpecs, openAPIRouteHandler } from "./handler.js";
+export type { ZodV4OverrideArgument } from "./middlewares.js";
 export {
   describeResponse,
   describeRoute,

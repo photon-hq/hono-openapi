@@ -1,12 +1,12 @@
 import { type Hook, sValidator } from "@hono/standard-validator";
 import {
-  loadVendor as loadVendorJson,
-  toJsonSchema,
-} from "@standard-community/standard-json";
-import {
   loadVendor as loadVendorOpenAPI,
   toOpenAPISchema,
 } from "@photon-hq/standard-openapi";
+import {
+  loadVendor as loadVendorJson,
+  toJsonSchema,
+} from "@standard-community/standard-json";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   Context,
@@ -136,9 +136,19 @@ const outputNeedsOnlyFormat = (check: ZodFormatCheckDef) => !check.local;
 const inputNeedsOnlyFormat = (check: ZodFormatCheckDef) =>
   check.format === "date" || check.format === "ipv4";
 
+/**
+ * The argument of Zod v4's `toJSONSchema` `override`, typed structurally so the
+ * exported overrides can be passed to it without this package depending on Zod.
+ */
+export type ZodV4OverrideArgument = {
+  zodSchema: unknown;
+  jsonSchema: Record<string, unknown>;
+};
+
 const zodV4Override =
   (needsOnlyFormat: (check: ZodFormatCheckDef) => boolean) =>
-  (ctx: ZodV4OverrideContext) => {
+  (argument: ZodV4OverrideArgument): void => {
+    const ctx = argument as ZodV4OverrideContext;
     // Date cannot be represented in JSON Schema and Zod v4's `toJSONSchema`
     // throws by default. With `unrepresentable: "any"` it produces `{}`, and
     // the type and format are filled in here.
