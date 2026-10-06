@@ -9,6 +9,8 @@ import {
   validator,
 } from "../middlewares.js";
 
+type ObjectSchema = { properties: Record<string, Record<string, unknown>> };
+
 describe("zod v4", () => {
   it("basic", async () => {
     const app = new Hono().get(
@@ -401,6 +403,101 @@ describe("zod v4", () => {
       type: "string",
       format: "date-time",
     });
+  });
+
+  it("documents formats without Zod's pattern where the format alone describes the value", async () => {
+    const handle = /^@[a-z]+$/;
+    const shape = {
+      at: z.iso.datetime(),
+      atWithOffset: z.iso.datetime({ offset: true }),
+      day: z.iso.date(),
+      email: z.email(),
+      handle: z.string().regex(handle),
+      id: z.uuid(),
+      local: z.iso.datetime({ local: true }),
+      nullableAt: z.iso.datetime().nullable(),
+      phone: z.e164(),
+      stampedAt: z.iso.datetime({ precision: 3 }),
+      token: z.base64(),
+      zulu: z.iso.datetime().regex(/Z$/),
+      reusedRegex: z.iso.date().regex(z.regexes.date),
+    };
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object(shape)),
+      describeRoute({
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": { schema: resolver(z.object(shape)) },
+            },
+          },
+        },
+      }),
+      async (c) => c.json({}),
+    );
+
+    const specs = await generateSpecs(app);
+    const output = (
+      specs.paths["/"]?.post?.responses?.[200]?.content?.["application/json"]
+        ?.schema as ObjectSchema
+    ).properties;
+    const input = (
+      specs.paths["/"]?.post?.requestBody as {
+        content: Record<string, { schema: ObjectSchema }>;
+      }
+    ).content["application/json"].schema.properties;
+    const hasPattern = (schema: unknown) =>
+      JSON.stringify(schema).includes('"pattern"');
+
+    // Produced values: every value the check allows is a valid instance of
+    // the format, so the format is enough.
+    for (const name of [
+      "at",
+      "atWithOffset",
+      "day",
+      "email",
+      "id",
+      "nullableAt",
+      "stampedAt",
+    ]) {
+      expect(hasPattern(output[name]), name).toBe(false);
+    }
+    expect(output.at).toEqual({ type: "string", format: "date-time" });
+    // Accepted values keep the pattern unless the check accepts everything
+    // the format allows. No Zod date-time does: RFC 3339 also allows a
+    // lowercase t and z, and a plain z.iso.datetime() rejects offsets too.
+    expect(hasPattern(input.day)).toBe(false);
+    for (const name of [
+      "at",
+      "atWithOffset",
+      "email",
+      "id",
+      "nullableAt",
+      "stampedAt",
+      "reusedRegex",
+    ]) {
+      expect(hasPattern(input[name]), name).toBe(true);
+    }
+    // A schema's own .regex() is kept even when it is Zod's own date regex.
+    expect(hasPattern(output.reusedRegex)).toBe(true);
+    // Never dropped: a schema's own regex, Zod-only formats, local times.
+    for (const schemas of [input, output]) {
+      expect(schemas.handle).toHaveProperty("pattern", handle.source);
+      expect(JSON.stringify(schemas.zulu)).toContain("Z$");
+      for (const name of ["local", "phone", "token"]) {
+        expect(hasPattern(schemas[name]), name).toBe(true);
+      }
+    }
+  });
+
+  it("documents by the top-level direction when a nested option says otherwise", async () => {
+    const converted = await resolver(z.object({ at: z.iso.datetime() }), {
+      io: "input",
+    }).toOpenAPISchema({ components: {}, options: { io: "output" } });
+    const schema = converted.schema as ObjectSchema;
+    expect(JSON.stringify(schema.properties.at)).toContain('"pattern"');
   });
 
   it("z.date() should work in validator schemas", async () => {
