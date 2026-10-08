@@ -1,12 +1,12 @@
 import { type Hook, sValidator } from "@hono/standard-validator";
 import {
-  loadVendor as loadVendorJson,
-  toJsonSchema,
-} from "@standard-community/standard-json";
-import {
   loadVendor as loadVendorOpenAPI,
   toOpenAPISchema,
 } from "@photon-hq/standard-openapi";
+import {
+  loadVendor as loadVendorJson,
+  toJsonSchema,
+} from "@standard-community/standard-json";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   Context,
