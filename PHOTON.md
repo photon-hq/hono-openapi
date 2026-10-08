@@ -21,6 +21,9 @@ The workflow publishes with its repository's `GITHUB_TOKEN`.
 Keep the upstream MIT license and compare the response-copy patch when syncing
 upstream or switching consumers back to the upstream package.
 
+Upstream commits CRLF line endings; this fork stores LF (`.gitattributes`). Merge
+upstream with `git merge -X renormalize` so line endings alone never conflict.
+
 ## Direction-aware conversion (ENG-2960)
 
 Validator schemas are converted as input. Route responses and reusable
