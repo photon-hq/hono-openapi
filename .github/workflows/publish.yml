@@ -20,7 +20,7 @@ concurrency:
 jobs:
   stage:
     if: github.repository == 'photon-hq/hono-openapi'
-    uses: photon-hq/buildspace/.github/workflows/npm-stage.yml@1179ca3914481ff7e865bdf8c013b1db7e4e77f8
+    uses: photon-hq/buildspace/.github/workflows/package-stage.yml@61d4f35e4ff5f877532766cbf25db25579437ea7
     permissions:
       contents: write
       packages: write

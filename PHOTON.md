@@ -18,7 +18,7 @@ under the `staging` dist-tag and stores its `X.Y.Z` production candidate on a
 `hono-openapi-staging-*` prerelease. To release, run **Promote to production**
 with that staging version and approve the `production` deployment. It publishes
 the stored candidate under `latest` without rebuilding and tags `vX.Y.Z`. See
-buildspace's [npm stage and promote](https://github.com/photon-hq/buildspace#npm-stage-and-promote)
+buildspace's [package stage and promote](https://github.com/photon-hq/buildspace#package-stage-and-promote)
 workflows.
 
 Releases are stable `X.Y.Z` versions. `1.3.1-photon.5` was the last `-photon.N`
