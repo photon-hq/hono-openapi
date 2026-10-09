@@ -11,7 +11,7 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-// Buildspace's npm-stage workflow runs this once for the staging build and once
+// Buildspace's package-stage workflow runs this once for the staging build and once
 // for its production candidate. Both entry points are loaded from the archive
 // as packed, resolving their dependencies from this checkout's node_modules.
 const stable = /^\d+\.\d+\.\d+$/u;

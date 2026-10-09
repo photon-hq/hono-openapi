@@ -14,7 +14,7 @@ permissions:
 jobs:
   promote:
     if: github.repository == 'photon-hq/hono-openapi'
-    uses: photon-hq/buildspace/.github/workflows/npm-promote.yml@1179ca3914481ff7e865bdf8c013b1db7e4e77f8
+    uses: photon-hq/buildspace/.github/workflows/package-promote.yml@6bbaf8bd45dcf21105467ce5ba38e32adb4f18d1
     permissions:
       contents: write
       packages: write
