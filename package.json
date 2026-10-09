@@ -85,6 +85,6 @@
   },
   "packageManager": "pnpm@10.0.0",
   "dependencies": {
-    "@photon-hq/standard-openapi": "0.2.9-photon.3"
+    "@photon-hq/standard-openapi": "0.2.9"
   }
 }

@@ -26,9 +26,9 @@ prerelease, and `1.3.1` is the first stable release of that line. Bump the versi
 in a pull request before each promotion; a version is released once. Versions
 after `1.3.1` are Photon's own and don't follow upstream's numbering, so record
 the upstream base commit here when syncing. Promotion requires every
-`@photon-hq/*` dependency to be an exact stable version, so `1.3.1` can't be
-promoted until `@photon-hq/standard-openapi` publishes a stable release and this
-package pins it.
+`@photon-hq/*` dependency to be an exact stable version; `1.3.1` pins
+`@photon-hq/standard-openapi@0.2.9`, the first stable release of the
+`0.2.9-photon.3` converter line.
 
 Keep the upstream MIT license and compare the response-copy patch when syncing
 upstream or switching consumers back to the upstream package.
