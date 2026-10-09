@@ -1,0 +1,24 @@
+name: Promote to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_version:
+        type: string
+        default: ""
+        description: Staging version to promote (blank promotes the current staging tag)
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    if: github.repository == 'photon-hq/hono-openapi'
+    uses: photon-hq/buildspace/.github/workflows/npm-promote.yml@1179ca3914481ff7e865bdf8c013b1db7e4e77f8
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+      attestations: read
+    with:
+      staging-version: ${{ inputs.staging_version }}
