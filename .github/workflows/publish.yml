@@ -1,34 +1,34 @@
-name: Publish GitHub Package
+name: Publish staging
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        default: true
+        description: Verify and package only
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: publish-hono-openapi
+  group: publish-staging
   cancel-in-progress: false
 
 jobs:
-  publish:
-    if: github.repository == 'photon-hq/hono-openapi' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-          registry-url: https://npm.pkg.github.com
-          scope: '@photon-hq'
-      - run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: pnpm test --run
-      - run: pnpm build
-      - run: pnpm publish --tag latest --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  stage:
+    if: github.repository == 'photon-hq/hono-openapi'
+    uses: photon-hq/buildspace/.github/workflows/npm-stage.yml@1179ca3914481ff7e865bdf8c013b1db7e4e77f8
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+      attestations: write
+      id-token: write
+    with:
+      ci-workflow: test.yml
+      verify: pnpm test --run
+      pack: node scripts/pack-release.mjs
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}

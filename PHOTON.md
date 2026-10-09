@@ -13,10 +13,19 @@ route metadata and documentation responses, which can discard components when
 generating another document from the same endpoint. The regression tests cover
 repeated generation and separate apps sharing route or component responses.
 
-To publish a new version, update `package.json` and the lockfile, merge to `main`,
-then run the **Publish GitHub Package** workflow. Versions are immutable;
-increment the `-photon.N` suffix for Photon changes to the same upstream version.
-The workflow publishes with its repository's `GITHUB_TOKEN`.
+Every push to `main` publishes a staging build, `X.Y.Z-staging.<run>.<attempt>`,
+under the `staging` dist-tag and stores its `X.Y.Z` production candidate on a
+`hono-openapi-staging-*` prerelease. To release, run **Promote to production**
+with that staging version and approve the `production` deployment. It publishes
+the stored candidate under `latest` without rebuilding and tags `vX.Y.Z`. See
+buildspace's [npm stage and promote](https://github.com/photon-hq/buildspace#npm-stage-and-promote)
+workflows.
+
+Releases are stable `X.Y.Z` versions. `1.3.1-photon.5` was the last `-photon.N`
+prerelease, and `1.3.1` is the first stable release of that line. Bump the version
+in a pull request before each promotion; a version is released once. Versions
+after `1.3.1` are Photon's own and don't follow upstream's numbering, so record
+the upstream base commit here when syncing.
 
 Keep the upstream MIT license and compare the response-copy patch when syncing
 upstream or switching consumers back to the upstream package.
